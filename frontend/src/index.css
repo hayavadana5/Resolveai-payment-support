@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+  }
+  /* Amounts and identifiers are tabular data and are set in mono with lining figures. */
+  .figure {
+    @apply font-mono tabular-nums;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-acting ring-offset-2 ring-offset-canvas;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply bg-surface border border-line rounded-md;
+  }
+  .field {
+    @apply w-full rounded border border-line bg-surface px-3 py-2 text-sm
+           placeholder:text-muted/60 focus:border-acting;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded px-4 py-2 text-sm font-medium
+           transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-ink text-white hover:bg-ink/90;
+  }
+  .btn-secondary {
+    @apply btn border border-line bg-surface text-ink hover:bg-canvas;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

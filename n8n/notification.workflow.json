@@ -1,0 +1,76 @@
+{
+  "name": "ResolveAI \u2014 Notification",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "resolveai-notification",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        260,
+        300
+      ],
+      "webhookId": "resolveai-notification"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Notification workflow. Swap the passthrough for a real email or SMS node and\n// the backend needs no change: it only reads `sent`.\nconst body = $input.first().json.body ?? $input.first().json;\nreturn [{ json: {\n  sent: true,\n  channel: body.channel ?? 'EMAIL',\n  recipient: body.recipient,\n  caseId: body.caseId,\n  sentAt: new Date().toISOString(),\n} }];"
+      },
+      "id": "process",
+      "name": "Process",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        780,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Process",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": true
+}

@@ -1,0 +1,76 @@
+{
+  "name": "ResolveAI \u2014 Refund",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "resolveai-refund",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        260,
+        300
+      ],
+      "webhookId": "resolveai-refund"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Refund workflow. Validates the request shape, simulates the gateway refund\n// call and returns a reference. Authority checks already happened in the backend\n// policy engine; this layer refuses anything that arrives malformed.\nconst body = $input.first().json.body ?? $input.first().json;\nif (!body.transactionId || typeof body.amount !== 'number' || body.amount <= 0) {\n  return [{ json: { refunded: false, error: 'Malformed refund request' } }];\n}\nreturn [{ json: {\n  refunded: true,\n  reference: 'RFND-' + Math.random().toString(16).slice(2, 10).toUpperCase(),\n  transactionId: body.transactionId,\n  amount: body.amount,\n  settlementDays: 5,\n  processedAt: new Date().toISOString(),\n} }];"
+      },
+      "id": "process",
+      "name": "Process",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        780,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Process",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": true
+}

@@ -1,0 +1,76 @@
+{
+  "name": "ResolveAI \u2014 Escalation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "resolveai-escalation",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        260,
+        300
+      ],
+      "webhookId": "resolveai-escalation"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Escalation workflow: register the handover and return the escalation id so the\n// backend can link it to the case. Add a Slack or email node here to page a human.\nconst body = $input.first().json.body ?? $input.first().json;\nreturn [{ json: {\n  queued: true,\n  escalationId: body.escalationId,\n  caseId: body.caseId,\n  riskLevel: body.riskLevel ?? 'MEDIUM',\n  notifiedAt: new Date().toISOString(),\n} }];"
+      },
+      "id": "process",
+      "name": "Process",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        780,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Process",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": true
+}

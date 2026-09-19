@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ResolveAI - Project Deep Dive</title>
+<meta name="description" content="Complete technical walkthrough of ResolveAI - autonomous AI payment-support teammate."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050812;--surface:#0d1117;--surface2:#161b22;--surface3:#21262d;
+  --border:rgba(255,255,255,0.08);--text:#e6edf3;--text-muted:#8b949e;--text-dim:#484f58;
+  --blue:#63b3ed;--purple:#9f7aea;--green:#68d391;--orange:#f6ad55;--red:#fc8181;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 20% 10%,rgba(99,179,237,0.06) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 80% 90%,rgba(159,122,234,0.06) 0%,transparent 60%);pointer-events:none;z-index:0}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(5,8,18,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+.nav-logo{font-size:1rem;font-weight:800;background:linear-gradient(135deg,#63b3ed,#9f7aea);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.nav-links{display:flex;gap:1.5rem;list-style:none}
+.nav-links a{color:var(--text-muted);text-decoration:none;font-size:0.85rem;font-weight:500;transition:color 0.2s}
+.nav-links a:hover{color:var(--text)}
+.nav-cta{background:linear-gradient(135deg,#63b3ed,#9f7aea);color:#fff!important;padding:0.4rem 1.1rem;border-radius:8px;font-weight:600!important}
+@media(max-width:700px){.nav-links{display:none}}
+.hero{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6rem 2rem 4rem;overflow:hidden}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(99,179,237,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(99,179,237,0.04) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 80% 60% at 50% 50%,black 30%,transparent 100%)}
+.live-badge{display:inline-flex;align-items:center;gap:0.5rem;background:rgba(99,179,237,0.1);border:1px solid rgba(99,179,237,0.3);border-radius:100px;padding:0.4rem 1.2rem;font-size:0.78rem;font-weight:600;color:var(--blue);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2rem;animation:fadeUp 0.6s ease both}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--blue);animation:pulse 2s ease infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.7)}}
+.hero h1{font-size:clamp(2.8rem,8vw,5.5rem);font-weight:900;line-height:1.05;letter-spacing:-0.03em;margin-bottom:1.5rem;animation:fadeUp 0.7s 0.1s ease both}
+.grad{background:linear-gradient(135deg,#63b3ed 0%,#9f7aea 50%,#68d391 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(1rem,2.5vw,1.3rem);color:var(--text-muted);max-width:680px;margin:0 auto 3rem;animation:fadeUp 0.7s 0.2s ease both}
+.pills{display:flex;flex-wrap:wrap;gap:0.6rem;justify-content:center;animation:fadeUp 0.7s 0.3s ease both}
+.pill{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.45rem 0.9rem;font-size:0.8rem;font-weight:500;color:var(--text-muted);font-family:'JetBrains Mono',monospace;transition:all 0.2s}
+.pill:hover{border-color:var(--blue);color:var(--blue)}
+.scroll-cue{position:absolute;bottom:2.5rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:0.4rem;color:var(--text-dim);font-size:0.72rem;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;animation:fadeUp 1s 0.6s ease both}
+.arrow{width:22px;height:22px;border-right:2px solid var(--text-dim);border-bottom:2px solid var(--text-dim);transform:rotate(45deg);animation:bounce 2s ease infinite}
+@keyframes bounce{0%,100%{transform:rotate(45deg) translateY(0)}50%{transform:rotate(45deg) translateY(6px)}}
+.wrap{max-width:1100px;margin:0 auto;padding:0 2rem;position:relative;z-index:1}
+section{padding:5.5rem 0}
+section:nth-child(even){background:rgba(255,255,255,0.015)}
+.eyebrow{display:inline-flex;align-items:center;gap:0.5rem;font-size:0.72rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--blue);margin-bottom:0.875rem}
+.eyebrow::before{content:'';display:block;width:18px;height:2px;background:var(--blue);border-radius:2px}
+h2{font-size:clamp(1.7rem,4vw,2.5rem);font-weight:800;letter-spacing:-0.02em;line-height:1.2;margin-bottom:1.1rem}
+.lead{font-size:1rem;color:var(--text-muted);max-width:620px;margin-bottom:3rem}
+.card{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:1.75rem;transition:all 0.3s;position:relative;overflow:hidden}
+.card:hover{border-color:rgba(99,179,237,0.3);transform:translateY(-3px);box-shadow:0 20px 50px rgba(0,0,0,0.4)}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.25rem}
+.c-icon{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin-bottom:1.1rem}
+.card h3{font-size:1rem;font-weight:700;margin-bottom:0.6rem}
+.card p{font-size:0.875rem;color:var(--text-muted);line-height:1.7}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;margin-top:2.5rem}
+.stat{text-align:center;padding:1.75rem;background:var(--surface2);border:1px solid var(--border);border-radius:14px}
+.stat-n{font-size:2.2rem;font-weight:900;letter-spacing:-0.03em;background:linear-gradient(135deg,#63b3ed,#9f7aea);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-l{font-size:0.8rem;color:var(--text-muted);margin-top:0.2rem}
+.arch{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:2rem}
+.layer{display:flex;align-items:center;gap:1rem;padding:0.7rem 1.25rem;border-radius:9px;border:1px solid var(--border);margin-bottom:0.6rem;background:var(--surface3);transition:all 0.2s}
+.layer:hover{border-color:var(--blue);transform:translateX(5px)}
+.li{font-size:1.25rem;width:28px;text-align:center;flex-shrink:0}
+.ln{font-weight:600;color:var(--text);font-size:0.88rem;min-width:165px;flex-shrink:0}
+.lt{color:var(--text-dim);font-size:0.75rem;font-family:'JetBrains Mono',monospace}
+.arr{text-align:center;color:var(--text-dim);margin:-0.15rem 0;font-size:1.1rem}
+.lpair{display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-bottom:0.6rem}
+.lpair .layer{margin:0}
+.cg{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.25rem;margin-top:1.5rem}
+.cm{padding:1.5rem;background:var(--surface3);border-radius:12px;border:1px solid var(--border)}
+.ch{font-weight:700;margin-bottom:0.5rem;font-size:0.9rem}
+.cm p{font-size:0.825rem;color:var(--text-muted)}
+.timeline{position:relative;padding-left:2.25rem}
+.timeline::before{content:'';position:absolute;left:0.65rem;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--blue),var(--purple),var(--green));border-radius:2px}
+.ti{position:relative;margin-bottom:2.75rem}
+.td{position:absolute;left:-2.25rem;top:0.3rem;width:16px;height:16px;border-radius:50%;background:var(--bg);border:3px solid var(--blue)}
+.td.p{border-color:var(--purple)}.td.g{border-color:var(--green)}.td.o{border-color:var(--orange)}.td.r{border-color:var(--red)}
+.tb{display:inline-block;font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:0.18rem 0.7rem;border-radius:100px;margin-bottom:0.65rem}
+.bb{background:rgba(99,179,237,0.1);color:var(--blue);border:1px solid rgba(99,179,237,0.2)}
+.bp{background:rgba(159,122,234,0.1);color:var(--purple);border:1px solid rgba(159,122,234,0.2)}
+.bg2{background:rgba(104,211,145,0.1);color:var(--green);border:1px solid rgba(104,211,145,0.2)}
+.bo{background:rgba(246,173,85,0.1);color:var(--orange);border:1px solid rgba(246,173,85,0.2)}
+.br{background:rgba(252,129,129,0.1);color:var(--red);border:1px solid rgba(252,129,129,0.2)}
+.ti h3{font-size:1.05rem;font-weight:700;margin-bottom:0.5rem}
+.ti p{color:var(--text-muted);font-size:0.875rem;margin-bottom:0.6rem}
+.fl{list-style:none;display:flex;flex-direction:column;gap:0.3rem}
+.fl li{font-size:0.835rem;color:var(--text-muted);display:flex;align-items:flex-start;gap:0.5rem}
+.fl li::before{content:'to';color:var(--blue);font-weight:700;flex-shrink:0}
+.cs{background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:0.78rem;line-height:1.8;color:var(--text-muted);margin-top:0.75rem}
+.kw{color:var(--purple)}.str{color:var(--green)}.num{color:var(--orange)}.cmt{color:var(--text-dim);font-style:italic}.ky{color:var(--blue)}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.1rem}
+.pc{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:1.5rem;border-left:3px solid}
+.pn{font-size:1.6rem;font-weight:900;margin-bottom:0.4rem}
+.pc h3{font-size:0.95rem;font-weight:700;margin-bottom:0.5rem}
+.pc p{font-size:0.825rem;color:var(--text-muted)}
+.sc{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1rem;display:flex;gap:1.25rem;align-items:flex-start;transition:all 0.2s}
+.sc:hover{border-color:rgba(99,179,237,0.3);transform:translateX(5px)}
+.sn{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:0.95rem;font-weight:800;flex-shrink:0}
+.sc h3{font-size:0.95rem;font-weight:700;margin-bottom:0.4rem}
+.sc p{font-size:0.835rem;color:var(--text-muted);line-height:1.65}
+.ot{display:inline-block;font-size:0.7rem;font-weight:700;padding:0.18rem 0.6rem;border-radius:5px;margin-top:0.65rem}
+.at{background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.ah,.ar{display:grid;grid-template-columns:70px 1fr 1.8fr;gap:1rem;padding:0.8rem 1.25rem;border-bottom:1px solid rgba(255,255,255,0.04);align-items:start;font-size:0.83rem}
+.ah{background:var(--surface3);font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim)}
+.ar:hover{background:rgba(255,255,255,0.02)}
+.mt{font-family:'JetBrains Mono',monospace;font-size:0.68rem;font-weight:700;padding:0.18rem 0.55rem;border-radius:5px;text-align:center}
+.get{background:rgba(104,211,145,0.15);color:var(--green)}.post{background:rgba(246,173,85,0.15);color:var(--orange)}
+.rt{font-family:'JetBrains Mono',monospace;color:var(--blue);font-size:0.78rem}
+.ad{color:var(--text-muted)}
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:1rem}
+.sk{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:1.4rem;transition:all 0.2s}
+.sk:hover{border-color:rgba(104,211,145,0.3)}
+.sk .ico{font-size:1.4rem;margin-bottom:0.7rem}
+.sk h4{font-size:0.875rem;font-weight:700;margin-bottom:0.4rem}
+.sk p{font-size:0.8rem;color:var(--text-muted)}
+.tt{width:100%;border-collapse:collapse;font-size:0.875rem}
+.tt th{text-align:left;padding:0.7rem 1.1rem;border-bottom:1px solid var(--border);font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim)}
+.tt td{padding:0.8rem 1.1rem;border-bottom:1px solid rgba(255,255,255,0.04);color:var(--text-muted);vertical-align:top}
+.tt td:first-child{font-weight:600;color:var(--blue);font-family:'JetBrains Mono',monospace;font-size:0.8rem}
+.tt tr:hover td{background:rgba(255,255,255,0.02)}
+footer{background:var(--surface);border-top:1px solid var(--border);padding:2.5rem 0;text-align:center;color:var(--text-dim);font-size:0.85rem}
+footer a{color:var(--blue);text-decoration:none;font-weight:600}
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+.fu{opacity:0;transform:translateY(22px);transition:opacity 0.6s ease,transform 0.6s ease}
+.fu.vis{opacity:1;transform:translateY(0)}
+@media(max-width:768px){.stat-row{grid-template-columns:1fr}.lpair{grid-template-columns:1fr}.sc{flex-direction:column}.ah,.ar{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">ResolveAI</div>
+  <ul class="nav-links">
+    <li><a href="#problem">Problem</a></li>
+    <li><a href="#arch">Architecture</a></li>
+    <li><a href="#stages">Stages</a></li>
+    <li><a href="#pipeline">Pipeline</a></li>
+    <li><a href="#demo">Demo</a></li>
+    <li><a href="#security">Security</a></li>
+    <li><a href="/" class="nav-cta">Open App &#8594;</a></li>
+  </ul>
+</nav>
+
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="live-badge"><span class="live-dot"></span>Track 3 &middot; Autonomous AI Teammates &middot; Hackathon Edition</div>
+  <h1><span class="grad">ResolveAI</span><br/>Autonomous Payment<br/>Support Teammate</h1>
+  <p class="hero-sub">An AI teammate that owns a payment-support case end-to-end. Reads, investigates, acts through a controlled tool layer, verifies the outcome, and escalates when human authority is required. Not a chatbot. A verified resolution engine.</p>
+  <div class="pills">
+    <span class="pill">React 18</span><span class="pill">Node.js + Express</span><span class="pill">MongoDB</span>
+    <span class="pill">Gemini 2.0</span><span class="pill">Cognee</span><span class="pill">n8n Workflows</span>
+    <span class="pill">JWT Auth</span><span class="pill">TypeScript</span><span class="pill">Zod</span><span class="pill">Jest</span>
+  </div>
+  <div class="scroll-cue">Scroll to explore<div class="arrow"></div></div>
+</div>
+
+<section id="problem">
+  <div class="wrap">
+    <div class="fu">
+      <span class="eyebrow">The Problem</span>
+      <h2>Why payment support needs an AI teammate</h2>
+      <p class="lead">Payment support is mostly a small set of boring, high-volume failures. Agents click through four systems to establish facts that are already in the database. This is exactly the kind of structured, policy-bound work that AI should own.</p>
+    </div>
+    <div class="grid3 fu">
+      <div class="card"><div class="c-icon" style="background:rgba(99,179,237,0.1)">&#x1F4B8;</div><h3>High-volume, repetitive failures</h3><p>Payment captured with no order. A refund the customer is entitled to. A settlement that looks like a failed charge. The same 4 failure modes, thousands of times a day, each requiring manual lookup across multiple systems.</p></div>
+      <div class="card"><div class="c-icon" style="background:rgba(159,122,234,0.1)">&#x1F916;</div><h3>LLMs alone fail in a specific way</h3><p>A model that answers confidently can also <em>refund &#x20B9;50,000 confidently</em>. "The API returned 200" is not the same as "the customer got their order." Standard chatbots have no verification, no policy enforcement, no audit trail.</p></div>
+      <div class="card"><div class="c-icon" style="background:rgba(104,211,145,0.1)">&#x2705;</div><h3>The right measure of success</h3><p>The measure is not a good answer. It is a <strong style="color:var(--text)">verified customer resolution</strong>. Every action must be confirmed against live database state, not just assumed from an API return value.</p></div>
+    </div>
+    <div class="stat-row fu">
+      <div class="stat"><div class="stat-n">4</div><div class="stat-l">Core failure modes handled autonomously</div></div>
+      <div class="stat"><div class="stat-n">6</div><div class="stat-l">Stage pipeline per case (investigate to verify)</div></div>
+      <div class="stat"><div class="stat-n">100%</div><div class="stat-l">Actions confirmed against live DB state</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="arch">
+  <div class="wrap">
+    <div class="fu">
+      <span class="eyebrow">Architecture</span>
+      <h2>How the system is wired together</h2>
+      <p class="lead">Every layer has a single job. Gemini never touches the database. The policy engine is code, not a prompt. The verification engine re-reads state rather than trusting return values.</p>
+    </div>
+    <div class="arch fu">
+      <div class="layer"><span class="li">&#x1F310;</span><span class="ln">React Frontend</span><span class="lt">Vite &middot; TypeScript &middot; Tailwind CSS &middot; React Router &middot; real-time polling</span></div>
+      <div class="arr">&#x2193;</div>
+      <div class="layer"><span class="li">&#x1F512;</span><span class="ln">Express API</span><span class="lt">JWT auth &middot; role guards &middot; Zod input validation &middot; rate limiting &middot; Helmet CSP</span></div>
+      <div class="arr">&#x2193;</div>
+      <div class="layer"><span class="li">&#x1F916;</span><span class="ln">AI Orchestrator</span><span class="lt">Gemini structured JSON output &middot; rule-based fallback &middot; Zod schema validation</span></div>
+      <div class="arr">&#x2193; &nbsp; &#x2193;</div>
+      <div class="lpair">
+        <div class="layer"><span class="li">&#x1F9E0;</span><span class="ln">Cognee Memory</span><span class="lt">Knowledge graph &middot; runbooks &middot; local keyword fallback</span></div>
+        <div class="layer"><span class="li">&#x2696;&#xFE0F;</span><span class="ln">Policy Engine</span><span class="lt">5 backend rules &middot; refund ceiling &middot; risk blocks</span></div>
+      </div>
+      <div class="arr">&#x2193;</div>
+      <div class="layer"><span class="li">&#x1F6E0;&#xFE0F;</span><span class="ln">Controlled Tool Registry</span><span class="lt">validate then authorize then policy check then execute then audit log, in that order</span></div>
+      <div class="arr">&#x2193;</div>
+      <div class="layer"><span class="li">&#x26A1;</span><span class="ln">n8n Workflows</span><span class="lt">reconciliation &middot; refund &middot; escalation &middot; customer notification webhooks</span></div>
+      <div class="arr">&#x2193;</div>
+      <div class="layer"><span class="li">&#x1F343;</span><span class="ln">MongoDB</span><span class="lt">10 Mongoose models: transactions, orders, cases, audit, escalations, notifications</span></div>
+      <div class="arr">&#x2193;</div>
+      <div class="layer"><span class="li">&#x1F52C;</span><span class="ln">Verification Engine</span><span class="lt">Re-reads state after every action &middot; never trusts return values &middot; compares before/after</span></div>
+      <div class="arr">&#x2193; &nbsp; &#x2193;</div>
+      <div class="lpair">
+        <div class="layer" style="border-color:rgba(104,211,145,0.35)"><span class="li">&#x2705;</span><span class="ln" style="color:var(--green)">RESOLVED</span><span class="lt">Customer notified &middot; audit record written</span></div>
+        <div class="layer" style="border-color:rgba(246,173,85,0.35)"><span class="li">&#x1F464;</span><span class="ln" style="color:var(--orange)">ESCALATED</span><span class="lt">Evidence packaged &middot; human agent assigned</span></div>
+      </div>
+    </div>
+    <div class="card fu" style="margin-top:1.75rem">
+      <h3 style="margin-bottom:1.1rem">&#x1F511; Three core commitments</h3>
+      <div class="cg">
+        <div class="cm"><div class="ch" style="color:var(--blue)">1. The model proposes; the backend disposes</div><p>Gemini has no database handle, no URLs, and no tools of its own. It returns one structured JSON decision. Every action it names is routed through a registry that validates, checks role, evaluates policy, executes, and audits in that order. An unauthorised request is refused by code, not by prompt.</p></div>
+        <div class="cm"><div class="ch" style="color:var(--purple)">2. Nothing is resolved on a claim</div><p>After acting, the verification engine re-reads MongoDB and asserts the specific change it expected. Order retry must produce an order in CREATED state. A refund must move the refunded amount. Verification failing escalates the case even if the action reported success.</p></div>
+        <div class="cm"><div class="ch" style="color:var(--green)">3. Fallbacks are labelled, never disguised</div><p>Gemini, Cognee and n8n can all be down. Each has a local stand-in. The UI shows plainly which one ran: AI MODE: DEMO FALLBACK, MEMORY: LOCAL FALLBACK. The system never claims a service it did not use.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="stages">
+  <div class="wrap">
+    <div class="fu">
+      <span class="eyebrow">Build Stages</span>
+      <h2>How the project was built, stage by stage</h2>
+      <p class="lead">The project evolved through 8 distinct stages, each adding a production layer on top of the previous.</p>
+    </div>
+    <div class="timeline fu">
+      <div class="ti">
+        <div class="td"></div>
+        <span class="tb bb">Stage 1 - Foundation</span>
+        <h3>Core Backend + Authentication + Case Engine</h3>
+        <p>Built the entire backend skeleton: Express with Helmet security, bcrypt hashing, JWT auth with role separation (SUPPORT_AGENT vs ADMIN), 10 Mongoose models, and a repeatable seed script that populates a full demo world with realistic Indian payment data.</p>
+        <ul class="fl">
+          <li>JWT authentication with 12-hour token expiry</li>
+          <li>bcrypt password hashing (cost factor 10)</li>
+          <li>Role-based route guards on every protected endpoint</li>
+          <li>10 Mongoose models: User, Customer, Merchant, Transaction, Order, SupportCase, Policy, AuditLog, Escalation, Notification</li>
+          <li>Rate limiting: 240 req/min global, 12/10min on login for brute-force protection</li>
+        </ul>
+        <div class="cs"><span class="cmt">// The policy engine: code, not a prompt</span><br><span class="kw">const</span> <span class="ky">ceiling</span> = <span class="num">5000</span>; <span class="cmt">// Rs 5,000 INR</span><br><span class="kw">if</span> (amount &gt; ceiling) <span class="kw">return</span> { action: <span class="str">'ESCALATE_TO_HUMAN'</span> }; <span class="cmt">// No prompt override</span></div>
+      </div>
+      <div class="ti">
+        <div class="td p"></div>
+        <span class="tb bp">Stage 2 - Customer Experience</span>
+        <h3>Customer Portal + Email-to-Case Intake</h3>
+        <p>Added a public-facing customer portal and an email ingestion webhook. Inbound emails from Gmail, Outlook, or n8n automatically create and resolve support cases without agent intervention.</p>
+        <ul class="fl">
+          <li>Public /customer portal where customers track their own case using a portal access token</li>
+          <li>POST /api/portal/cases creates a case and immediately runs the AI teammate</li>
+          <li>POST /api/intake/email is the production-facing webhook for inbound email-to-case</li>
+          <li>Idempotent messageId deduplication so the same email never creates duplicate cases</li>
+          <li>X-Email-Ingest-Secret header protection on the intake webhook</li>
+          <li>Email Inbox UI for staff to review and action inbound messages</li>
+        </ul>
+      </div>
+      <div class="ti">
+        <div class="td g"></div>
+        <span class="tb bg2">Stage 3 - Autonomous Operations</span>
+        <h3>Risk Intelligence + Anomaly Detection + Action Plans</h3>
+        <p>Added a deterministic multi-factor risk scoring engine combining transaction, customer, merchant, action, and history signals. Added proactive anomaly detection for captured payments with missing orders.</p>
+        <ul class="fl">
+          <li>5-factor risk scoring across transaction amount, customer verification, merchant risk, action type, and case history</li>
+          <li>Risk levels: LOW / MEDIUM / HIGH / CRITICAL, each blocking different downstream actions</li>
+          <li>Action-plan persistence: every AI recommendation becomes an ordered execution plan in the DB</li>
+          <li>Proactive merchant anomaly detection scans for payment/order mismatches</li>
+          <li>One-click incident creation from a detected anomaly</li>
+          <li>Live case polling in the Operations UI showing teammate progress in real time</li>
+        </ul>
+      </div>
+      <div class="ti">
+        <div class="td o"></div>
+        <span class="tb bo">Stage 4 - Control Plane</span>
+        <h3>Admin Panel + Policy Management + Teammate Monitor</h3>
+        <p>Built a full admin control plane with policy configuration, teammate monitoring, and performance dashboards. Admins can tune autonomous refund limits, view AI confidence distributions, and audit every decision.</p>
+        <ul class="fl">
+          <li>Dynamic policy configuration for refund ceiling, confidence threshold, and max action attempts</li>
+          <li>Teammate activity monitor with real-time resolution and escalation rates</li>
+          <li>Full audit trail filterable by case, event type, actor, and outcome</li>
+          <li>Analytics dashboard showing verified resolutions, autonomous rate, average resolution time</li>
+          <li>Admin-only refund approval flow for escalated cases that executes and verifies on approval</li>
+        </ul>
+      </div>
+      <div class="ti">
+        <div class="td"></div>
+        <span class="tb bb">Stage 5 - Real-time Autonomy</span>
+        <h3>n8n Workflow Integration + Live Polling + Notifications</h3>
+        <p>Wired the backend to n8n Cloud webhooks for four core workflows. Added real-time 6-stage progress display so users watch the AI work through investigation, decision, execution, and verification live.</p>
+        <ul class="fl">
+          <li>4 n8n workflows: order reconciliation, refund processing, human escalation, customer notification</li>
+          <li>X-ResolveAI-Signature webhook authentication on all n8n calls</li>
+          <li>Local fallback for every n8n workflow so the system works without n8n configured</li>
+          <li>Live 2-second polling during AI resolution so users see the 6-stage pipeline fill in real time</li>
+          <li>Customer notification emails sent via n8n on case resolution</li>
+        </ul>
+      </div>
+      <div class="ti">
+        <div class="td p"></div>
+        <span class="tb bp">Stage 6 - Multi-Agent Orchestration</span>
+        <h3>Cognee Memory + Knowledge Graph + Verified Resolutions</h3>
+        <p>Integrated Cognee as the AI memory layer. Payment runbooks, refund policies, merchant incident histories, and resolved case write-ups are pushed into a knowledge graph. The AI retrieves relevant context before every decision.</p>
+        <ul class="fl">
+          <li>Knowledge corpus: payment runbooks, refund policy, escalation policy, merchant history, resolved case write-ups</li>
+          <li>Cognee retrieval uses issue text plus category plus merchant ID as the composite query</li>
+          <li>Retrieved context shown in the case UI with source attribution</li>
+          <li>Local keyword search fallback with honest MEMORY: LOCAL FALLBACK labelling</li>
+          <li>Resolved case summaries written back to Cognee for future retrieval (continuous learning)</li>
+          <li>Demo Center page for rapid hackathon showcasing and judge walkthroughs</li>
+        </ul>
+      </div>
+      <div class="ti">
+        <div class="td r"></div>
+        <span class="tb br">Stage 7 - Production Hardening</span>
+        <h3>Security Audit + Error Handling + Request Tracing</h3>
+        <p>Final production pass: tightened security headers, ensured stack traces never reach clients, added request ID tracing, and verified all secrets are server-only and never serialised into responses.</p>
+        <ul class="fl">
+          <li>Helmet CSP and security headers fully configured</li>
+          <li>All error responses strip internal details before sending to the client</li>
+          <li>Request IDs injected at middleware level and propagated through all audit log entries</li>
+          <li>Zero API keys, DB credentials, or internal URLs in any API response</li>
+          <li>Account enumeration resistance: same error message for wrong password and unknown user</li>
+        </ul>
+      </div>
+      <div class="ti">
+        <div class="td g"></div>
+        <span class="tb bg2">Stage 8 - Hackathon Final</span>
+        <h3>Demo Polish + Seed Data + Walkthrough Scenarios</h3>
+        <p>Final demo preparation: seeded 6 open demo cases and 6 historical cases, polished the 6-stage resolution UI, added quick-fill login buttons, and built the 5-minute hackathon walkthrough flow.</p>
+        <ul class="fl">
+          <li>6 open demo cases covering all 4 failure modes (payment/order mismatch, eligible refund, high-value refund, suspicious transaction)</li>
+          <li>6 historical closed/escalated cases giving the dashboard real metrics on first load</li>
+          <li>Quick-fill login buttons for both demo accounts on the login screen</li>
+          <li>Mode badges on every page showing live vs fallback for AI, memory, and workflows</li>
+          <li>Full test suite covering policy engine, tools, verification, workflow, API routes, and fallback honesty</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="pipeline">
+  <div class="wrap">
+    <div class="fu">
+      <span class="eyebrow">The AI Loop</span>
+      <h2>The six-stage resolution pipeline</h2>
+      <p class="lead">When "Resolve with AI" is pressed, this exact sequence runs. Every stage is persisted to the database and displayed live in the UI as it completes.</p>
+    </div>
+    <div class="pgrid fu">
+      <div class="pc" style="border-left-color:var(--blue)"><div class="pn" style="color:var(--blue)">01</div><h3>Investigate</h3><p>Fetch the customer, transaction, order, and merchant from MongoDB. Build a complete picture of what happened and what the current system state is. No assumptions made.</p></div>
+      <div class="pc" style="border-left-color:var(--purple)"><div class="pn" style="color:var(--purple)">02</div><h3>Retrieve Memory</h3><p>Query Cognee or local keyword search using the issue text plus category plus merchant ID. Retrieve relevant runbooks, past similar cases, and policy excerpts. Show sources in the UI.</p></div>
+      <div class="pc" style="border-left-color:var(--green)"><div class="pn" style="color:var(--green)">03</div><h3>AI Decision</h3><p>Send full context to Gemini with a strict JSON schema and responseMimeType application/json. Validate the response with Zod. If Gemini fails or returns invalid JSON, fall through to the rule-based engine.</p></div>
+      <div class="pc" style="border-left-color:var(--orange)"><div class="pn" style="color:var(--orange)">04</div><h3>Policy Check</h3><p>5 rules evaluate in code before any action executes: refund ceiling, confidence threshold, high-risk block, max attempt limit, and suspicious transaction block. A refusal is final and no prompt can override it.</p></div>
+      <div class="pc" style="border-left-color:var(--red)"><div class="pn" style="color:var(--red)">05</div><h3>Execute Action</h3><p>Controlled tool registry runs: validate input schema, check caller role, policy gate, execute via DB write plus n8n webhook, write audit record. Gemini never calls a tool directly.</p></div>
+      <div class="pc" style="border-left-color:var(--green)"><div class="pn" style="color:var(--green)">06</div><h3>Verify State</h3><p>Re-read MongoDB. Assert the specific change expected: order must be in CREATED state, refunded amount must have moved. If verification fails, escalate even if the action reported success.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="demo">
+  <div class="wrap">
+    <div class="fu">
+      <span class="eyebrow">Demo Scenarios</span>
+      <h2>Four cases that tell the whole story</h2>
+      <p class="lead">All four are seeded and ready in the Cases page. Each demonstrates a different aspect of the system. Together they cover every major outcome path.</p>
+    </div>
+    <div class="fu">
+      <div class="sc">
+        <div class="sn" style="background:rgba(104,211,145,0.1);color:var(--green)">1</div>
+        <div>
+          <h3>CASE-DEMO01 - Payment deducted, order missing (Rs 2,499)</h3>
+          <p>The AI investigates, finds payment: SUCCESS against order: NOT_CREATED. Retrieves the merchant's known history of payment/order sync failures from Cognee memory. Reconciles payment, retries order creation, verifies the order now exists in CREATED state, notifies the customer, and marks the case RESOLVED. Roughly four seconds end-to-end.</p>
+          <span class="ot" style="background:rgba(104,211,145,0.1);color:var(--green);border:1px solid rgba(104,211,145,0.25)">Autonomously RESOLVED - order created and verified</span>
+        </div>
+      </div>
+      <div class="sc">
+        <div class="sn" style="background:rgba(99,179,237,0.1);color:var(--blue)">2</div>
+        <div>
+          <h3>CASE-DEMO02 - Eligible refund request (Rs 3,000)</h3>
+          <p>Checks refund eligibility, confirms the amount is inside the Rs 5,000 autonomous authority ceiling, processes the refund through the n8n refund workflow, verifies the refunded amount moved on the transaction record, notifies the customer, and resolves. A clean end-to-end autonomous financial action with full verification.</p>
+          <span class="ot" style="background:rgba(99,179,237,0.1);color:var(--blue);border:1px solid rgba(99,179,237,0.25)">Autonomously RESOLVED - refund processed and verified</span>
+        </div>
+      </div>
+      <div class="sc">
+        <div class="sn" style="background:rgba(246,173,85,0.1);color:var(--orange)">3</div>
+        <div>
+          <h3>CASE-DEMO03 - High-value refund (Rs 50,000) - watch this one</h3>
+          <p>The refund is <strong style="color:var(--text)">blocked by the policy engine before execution</strong>, not talked out of by the prompt. The amount exceeds the Rs 5,000 autonomous ceiling. An escalation is created carrying the full investigation, evidence, and recommended action. An admin approves on the Escalations page; the refund then executes with the human's authority attached and is fully verified.</p>
+          <span class="ot" style="background:rgba(246,173,85,0.1);color:var(--orange);border:1px solid rgba(246,173,85,0.25)">ESCALATED then Admin approves then refund executes and is verified</span>
+        </div>
+      </div>
+      <div class="sc">
+        <div class="sn" style="background:rgba(252,129,129,0.1);color:var(--red)">4</div>
+        <div>
+          <h3>CASE-DEMO04 - Suspicious transaction (Rs 45,000)</h3>
+          <p>Risk signals from the transaction, unverified new account, and high-risk merchant compound to HIGH risk. Retrieved Cognee knowledge explains that refunding a disputed charge would destroy chargeback evidence. All autonomous financial action is blocked by the risk engine, not the policy ceiling. The case goes to a human with full evidence. The money does not move.</p>
+          <span class="ot" style="background:rgba(252,129,129,0.1);color:var(--red);border:1px solid rgba(252,129,129,0.25)">ESCALATED - risk block, not authority block. Money untouched.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="fu">
+      <span class="eyebrow">API Reference</span>
+      <h2>REST API - every endpoint</h2>
+      <p class="lead">All routes except /api/health and /api/auth/login require Authorization: Bearer token</p>
+    </div>
+    <div class="at fu">
+      <div class="ah"><div>Method</div><div>Route</div><div>Purpose</div></div>
+      <div class="ar"><span class="mt post">POST</span><span class="rt">/api/auth/login</span><span class="ad">Exchange email and password for a JWT (12h expiry). Same error message for unknown user and wrong password.</span></div>
+      <div class="ar"><span class="mt get">GET</span><span class="rt">/api/auth/me</span><span class="ad">Return the current authenticated user's id, email, name, and role.</span></div>
+      <div class="ar"><span class="mt get">GET</span><span class="rt">/api/cases</span><span class="ad">List support cases. Filter by ?status=OPEN|RESOLVED|ESCALATED</span></div>
+      <div class="ar"><span class="mt post">POST</span><span class="rt">/api/cases</span><span class="ad">Create a new support case manually by an agent.</span></div>
+      <div class="ar"><span class="mt get">GET</span><span class="rt">/api/cases/:caseId</span><span class="ad">Full case detail: customer, transaction, order, audit trail, memory context, escalation.</span></div>
+      <div class="ar"><span class="mt post">POST</span><span class="rt">/api/cases/:caseId/resolve</span><span class="ad">Hand the case to the AI teammate. Runs the 6-stage pipeline. Returns updated case.</span></div>
+      <div class="ar"><span class="mt get">GET</span><span class="rt">/api/cases/meta/modes</span><span class="ad">Which integrations are live vs. fallback (Gemini / Cognee / n8n).</span></div>
+      <div class="ar"><span class="mt get">GET</span><span class="rt">/api/escalations</span><span class="ad">List escalations with their cases, risk level, AI summary, and recommended action.</span></div>
+      <div class="ar"><span class="mt post">POST</span><span class="rt">/api/escalations/:id/decision</span><span class="ad">ADMIN ONLY. Approve / Reject / Request-info. Approval triggers deferred execution and verification.</span></div>
+      <div class="ar"><span class="mt get">GET</span><span class="rt">/api/audit</span><span class="ad">Audit records filterable by caseId, event type, and actor. Every decision and outcome is logged.</span></div>
+      <div class="ar"><span class="mt get">GET</span><span class="rt">/api/analytics</span><span class="ad">Computed metrics: verified resolutions, autonomous rate, avg resolution time, escalation rate.</span></div>
+      <div class="ar"><span class="mt get">GET</span><span class="rt">/api/analytics/dashboard</span><span class="ad">Recent cases, activity feed, and open escalations for the main dashboard view.</span></div>
+      <div class="ar"><span class="mt post">POST</span><span class="rt">/api/portal/cases</span><span class="ad">PUBLIC. Customer creates a case from the portal. Returns portal access token for tracking.</span></div>
+      <div class="ar"><span class="mt post">POST</span><span class="rt">/api/intake/email</span><span class="ad">Email-to-case webhook. Protected by X-Email-Ingest-Secret. Idempotent on messageId.</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="security">
+  <div class="wrap">
+    <div class="fu">
+      <span class="eyebrow">Security Model</span>
+      <h2>What the system is structurally incapable of</h2>
+      <p class="lead">Security is not enforced by prompts. Every constraint is a code path that runs regardless of what the AI asks for. Gemini is structurally incapable of arbitrary DB access, arbitrary queries, arbitrary URLs, and unrestricted financial actions.</p>
+    </div>
+    <div class="sg fu">
+      <div class="sk"><div class="ico">&#x1F510;</div><h4>Authentication</h4><p>bcrypt hashes (cost 10), JWT with 12h expiry, same error for wrong password and unknown account. Login cannot enumerate users.</p></div>
+      <div class="sk"><div class="ico">&#x1F6E1;&#xFE0F;</div><h4>Authorization</h4><p>Route-level role guards plus second role check inside the tool registry. The AI caller has role AI and is never ADMIN. It cannot approve its own escalations.</p></div>
+      <div class="sk"><div class="ico">&#x2696;&#xFE0F;</div><h4>Policy Enforcement</h4><p>5 hard rules in policy/engine.ts. A refund over the ceiling is refused whether the model asks nicely, asks twice, or claims urgency. No prompt override.</p></div>
+      <div class="sk"><div class="ico">&#x2705;</div><h4>Input Validation</h4><p>Every tool has a Zod schema. Malformed input is rejected before any database access. AI JSON output is also Zod-validated before reaching downstream code.</p></div>
+      <div class="sk"><div class="ico">&#x1F511;</div><h4>Secrets Management</h4><p>All API keys read from the backend environment only. No key, DB credential, or internal URL is serialised into any API response or reaches the browser bundle.</p></div>
+      <div class="sk"><div class="ico">&#x1F4CB;</div><h4>Audit Logging</h4><p>Every decision, tool call, policy evaluation, workflow invocation, verification, and human override is stored. Credential-shaped fields are redacted before logging.</p></div>
+      <div class="sk"><div class="ico">&#x1F6A6;</div><h4>Rate Limiting</h4><p>240 req/min global API limit. 12 login attempts per 10 minutes per IP. Limits enforced in middleware before any business logic runs.</p></div>
+      <div class="sk"><div class="ico">&#x1F6AB;</div><h4>Error Handling</h4><p>Stack traces and driver internals never reach the client. All errors pass through a central handler that strips internal details before sending the response.</p></div>
+      <div class="sk"><div class="ico">&#x1F9EC;</div><h4>No DB Access for Gemini</h4><p>Gemini cannot issue MongoDB queries, reach external URLs, or call tools directly. Its only output surface is one validated JSON object the backend may or may not act on.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="fu">
+      <span class="eyebrow">Technology</span>
+      <h2>Full technology stack and rationale</h2>
+      <p class="lead">Every technology choice was made for a specific reason. No accidental complexity.</p>
+    </div>
+    <div class="card fu" style="padding:0;overflow:hidden">
+      <table class="tt">
+        <thead><tr><th>Layer</th><th>Technology</th><th>Why this choice</th></tr></thead>
+        <tbody>
+          <tr><td>Frontend</td><td>React 18, Vite, TypeScript, Tailwind CSS, React Router</td><td>Fast HMR dev loop, type-safe components, utility-first styling, client-side routing without a full framework</td></tr>
+          <tr><td>Backend</td><td>Node.js, Express, TypeScript strict mode</td><td>Familiar ecosystem, fast iteration, full type safety end-to-end, same language as the frontend</td></tr>
+          <tr><td>Database</td><td>MongoDB via Mongoose</td><td>Flexible schema for evolving case states; Mongoose for schema validation and typed models</td></tr>
+          <tr><td>AI Reasoning</td><td>Gemini 2.0 Flash via @google/generative-ai</td><td>Structured JSON output mode with response schema; fast enough for live demo; well-priced for hackathon</td></tr>
+          <tr><td>Memory</td><td>Cognee knowledge graph</td><td>Retrieves semantically relevant runbooks and past cases; local keyword fallback for offline demo</td></tr>
+          <tr><td>Workflows</td><td>n8n Cloud webhooks</td><td>Visual workflow editor, easy import/export via JSON, handles email, refund, and escalation notifications</td></tr>
+          <tr><td>Auth</td><td>JWT plus bcrypt, roles SUPPORT_AGENT and ADMIN</td><td>Stateless, easy to inspect, role separation enforced at both route and tool registry level</td></tr>
+          <tr><td>Validation</td><td>Zod</td><td>Schema-first validation with TypeScript type inference; used on both AI output and all tool inputs</td></tr>
+          <tr><td>Testing</td><td>Jest, Supertest, mongodb-memory-server</td><td>In-memory DB for isolated tests; Supertest for full HTTP round-trips without a running server</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="fu">
+      <span class="eyebrow">Test Coverage</span>
+      <h2>What the test suite verifies</h2>
+      <p class="lead">Tests run against an in-memory MongoDB with no live database touched. Run with npm test in the backend directory.</p>
+    </div>
+    <div class="grid3 fu">
+      <div class="card"><div class="c-icon" style="background:rgba(104,211,145,0.1)">&#x1F512;</div><h3>Auth and Role Separation</h3><p>Login flow, token expiry, wrong password, account enumeration resistance, and agent vs admin role guards on every protected route and tool.</p></div>
+      <div class="card"><div class="c-icon" style="background:rgba(246,173,85,0.1)">&#x2696;&#xFE0F;</div><h3>Policy Engine - All 5 Rules</h3><p>A Rs 50,000 refund is refused and the transaction is left untouched. A Rs 3,000 eligible refund is processed and the money actually moves in the database.</p></div>
+      <div class="card"><div class="c-icon" style="background:rgba(99,179,237,0.1)">&#x1F52C;</div><h3>Verification Failures</h3><p>Verification failing when an action claims success but state did not change. The case escalates even though the tool returned 200.</p></div>
+      <div class="card"><div class="c-icon" style="background:rgba(159,122,234,0.1)">&#x1F464;</div><h3>Escalation and Admin Approval</h3><p>Escalation creation from a policy refusal. Admin-approved refund executes the deferred action, verifies the state change, and updates the case to RESOLVED.</p></div>
+      <div class="card"><div class="c-icon" style="background:rgba(252,129,129,0.1)">&#x1F504;</div><h3>Full 4-Scenario Workflow</h3><p>End-to-end test of all four demo scenarios: order retry, eligible refund, high-value escalation, and suspicious transaction block.</p></div>
+      <div class="card"><div class="c-icon" style="background:rgba(104,211,145,0.1)">&#x1F3F7;&#xFE0F;</div><h3>Fallback Honesty</h3><p>With no API keys set, cases record DEMO_FALLBACK and LOCAL_FALLBACK in the decision and audit log. The system never claims a service it did not use.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p style="margin-bottom:0.4rem"><strong style="color:var(--text-muted)">ResolveAI</strong> - Autonomous Payment Support Teammate</p>
+    <p>Track 3: Autonomous AI Teammates - React, Express, MongoDB, Gemini 2.0, Cognee, n8n</p>
+    <p style="margin-top:1.5rem"><a href="/">Open the App</a>&nbsp;&nbsp;&middot;&nbsp;&nbsp;<a href="/customer">Customer Portal</a></p>
+  </div>
+</footer>
+
+<script>
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('vis'); });
+}, { threshold: 0.08, rootMargin: '0px 0px -50px 0px' });
+document.querySelectorAll('.fu').forEach(el => obs.observe(el));
+</script>
+</body>
+</html>
